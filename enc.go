@@ -56,6 +56,14 @@ func (b *Bvg) DrawPoly(pts ...Point) {
 	binary.Write(b.W, binary.LittleEndian, int8(112))
 	binary.Write(b.W, binary.LittleEndian, int16(len(pts)))
 	for _, p := range pts {
-	binary.Write(b.W, binary.LittleEndian, p)
+		binary.Write(b.W, binary.LittleEndian, p)
+	}
+}
 
-}}
+func (b *Bvg) DrawBez(pts ...Point) {
+	binary.Write(b.W, binary.LittleEndian, int8(98))
+	binary.Write(b.W, binary.LittleEndian, int16(len(pts)))
+	for _, p := range pts {
+		binary.Write(b.W, binary.LittleEndian, p)
+	}
+}
