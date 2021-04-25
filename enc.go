@@ -1,15 +1,29 @@
-package bvg
+package main
 
 import (
 	"encoding/binary"
-	"fmt"
+	//	"fmt"
 	"io"
-	"os"
+	"math"
+	//	"os"
 )
+
+
+func main() {
+	test()
+}
 
 // This stores the writer and commands to be written
 type Bvg struct {
-	W io.Writer
+	Writer     io.Writer
+	Reader     io.Reader
+	Points     []*Point
+	Lines      []*Line
+	Circles    []*Circle
+	Triangles  []*Triangle
+	Polys      []*Poly
+	Bezs       []*Bez
+	LineStrips []*LineStrip
 }
 
 // A point must lie between (-1,-1) and (1,1)
@@ -19,65 +33,196 @@ type Point struct {
 	R, G, B, A uint8
 }
 
-func main() {
-	bvgfile, err := os.Create("test.bvg")
-	bvg := New(bvgfile)
-	bvg.DrawLine(Point{1, 1, 255, 255, 255, 255}, Point{-1, -1, 255, 255, 255, 255})
-	bvg.DrawRect(Point{0.5, 0.5, 255, 255, 255, 255}, Point{-0.5, -0.5, 255, 255, 255, 255})
-	bvg.DrawCircle(Point{0, 0, 255, 255, 255, 255}, Point{0.3, 0.3, 255, 255, 255, 255})
-	fmt.Println(err)
+// Returns a new Point with the given Position
+func NewPt(x, y float64) *Point {
+	return &Point{
+		X: x,
+		Y: y,
+	}
+}
+func (p *Point) Write(w io.Writer) {
+	binary.Write(w, binary.LittleEndian, p.X)
+	binary.Write(w, binary.LittleEndian, p.Y)
+	binary.Write(w, binary.LittleEndian, p.R)
+	binary.Write(w, binary.LittleEndian, p.G)
+	binary.Write(w, binary.LittleEndian, p.B)
+	binary.Write(w, binary.LittleEndian, p.A)
+}
+
+// Returns a new Point with the given position and color
+func NewPtCol(x, y float64, r, g, b, a uint8) *Point {
+	return &Point{
+		X: x,
+		Y: y,
+		R: r,
+		G: g,
+		B: b,
+		A: a,
+	}
+}
+
+func (p *Point) RelPt(l, theta float64) *Point {
+	return &Point{
+		X: p.X + l*math.Cos(theta),
+		Y: p.Y + l*math.Sin(theta),
+		R: p.R,
+		G: p.G,
+		B: p.B,
+		A: p.A,
+	}
+}
+
+type Line struct {
+	P1 *Point
+	P2 *Point
+}
+
+func NewLine(p1, p2 *Point) *Line {
+	return &Line{
+		P1: p1,
+		P2: p2,
+	}
+}
+
+type Circle struct {
+	P1 *Point
+	P2 *Point
+}
+
+func NewCircle(p1 *Point, r float64) *Circle {
+	return &Circle{
+		P1: p1,
+		P2: p1.RelPt(r, 0),
+	}
+}
+
+func NewCircleGrad(p1, p2 *Point) *Circle {
+	return &Circle{
+		P1: p1,
+		P2: p2,
+	}
+}
+
+type Triangle struct {
+	P1, P2, P3 *Point
+}
+
+func NewTriangle(p1, p2, p3 *Point) *Triangle {
+	return &Triangle{
+		P1: p1,
+		P2: p2,
+		P3: p3,
+	}
+}
+
+type Poly struct {
+	Pts []*Point
+}
+
+func NewPoly(p ...*Point) *Poly {
+	return &Poly{
+		Pts: p,
+	}
+}
+
+type Bez struct {
+	Pts []*Point
+}
+
+func NewBez(Points ...*Point) *Bez {
+	return &Bez{
+		Pts: Points,
+	}
+}
+
+type LineStrip struct {
+	Pts []*Point
+}
+
+func NewLineStrip(pts ...*Point) *LineStrip {
+	return &LineStrip{
+		Pts: pts,
+	}
 }
 
 // Returns a new bvg struct with the specified writer
 func New(writer io.Writer) *Bvg {
 	return &Bvg{
-		W: writer,
+		Writer: writer,
+	}
+}
+
+func (b *Bvg) Encode() {
+	for _, val := range b.Lines {
+		b.DrawLine(*val)
+	}
+	for _, val := range b.Triangles {
+		b.DrawTriangle(*val)
+	}
+	for _, val := range b.Circles {
+		b.DrawCircle(*val)
+	}
+	for _, val := range b.Polys {
+		b.DrawPoly(*val)
+	}
+	for _, val := range b.LineStrips {
+		b.DrawLineStrip(*val)
 	}
 }
 
 // Draws a line from point p1 to p2 with the
 // colors inside the point
-func (b *Bvg) DrawLine(p1, p2 Point) {
-	binary.Write(b.W, binary.LittleEndian, int8(108))
-	binary.Write(b.W, binary.LittleEndian, p1)
-	binary.Write(b.W, binary.LittleEndian, p2)
+func (b *Bvg) DrawLine(l Line) {
+	binary.Write(b.Writer, binary.LittleEndian, int8('l'))
+	l.P1.Write(b.Writer)
+	l.P2.Write(b.Writer)
 }
 
-// Draw a rectangle from point p1 to p2
-func (b *Bvg) DrawRect(p1, p2 Point) {
-	binary.Write(b.W, binary.LittleEndian, int8(114))
-	binary.Write(b.W, binary.LittleEndian, p1)
-	binary.Write(b.W, binary.LittleEndian, p2)
+// draw a triangle from p1, p2, p3
+func (b *Bvg) DrawTriangle(t Triangle) {
+	binary.Write(b.Writer, binary.LittleEndian, int8('t'))	
+	t.P1.Write(b.Writer)
+	t.P2.Write(b.Writer)
+	t.P3.Write(b.Writer)
 }
 
 // draw a circle with p1 as center and distance between p1
 // an p2 as radius with colour gradient from colors of p1 at
 // the center to colours of p2 at the circumference
-func (b *Bvg) DrawCircle(p1, p2 Point) {
-	binary.Write(b.W, binary.LittleEndian, int8(99))
-	binary.Write(b.W, binary.LittleEndian, p1)
-	binary.Write(b.W, binary.LittleEndian, p2)
-
+func (b *Bvg) DrawCircle(c Circle) {
+	binary.Write(b.Writer, binary.LittleEndian, int8('c'))
+	c.P1.Write(b.Writer)
+	c.P2.Write(b.Writer)
 }
 
+
 // draws a polygon from the points given, it triangulates by
-// drawing a triagle from the firts three points, then it
-// draws a triangle from the 2nd 3rd and 4th point and so on
-func (b *Bvg) DrawPoly(pts ...Point) {
-	binary.Write(b.W, binary.LittleEndian, int8(112))
-	binary.Write(b.W, binary.LittleEndian, int32(len(pts)))
-	for _, p := range pts {
-		binary.Write(b.W, binary.LittleEndian, p)
+// using a triangle strip from the given points
+func (b *Bvg) DrawPoly(p Poly) {
+	binary.Write(b.Writer, binary.LittleEndian, int8('p'))
+	binary.Write(b.Writer, binary.LittleEndian, int32(len(p.Pts)))
+	for _, p := range p.Pts {
+		p.Write(b.Writer)
 	}
 }
 
 // Draws a bezier curve with 1st and last point being
 // Starting and Ending points and the rest inbetween being
 // control points
-func (b *Bvg) DrawBez(pts ...Point) {
-	binary.Write(b.W, binary.LittleEndian, int8(98))
-	binary.Write(b.W, binary.LittleEndian, int32(len(pts)))
-	for _, p := range pts {
-		binary.Write(b.W, binary.LittleEndian, p)
+func (b *Bvg) DrawBez(bez Bez) {
+	binary.Write(b.Writer, binary.LittleEndian, int8('b'))
+	binary.Write(b.Writer, binary.LittleEndian, int32(len(bez.Pts)))
+	for _, p := range bez.Pts {
+		p.Write(b.Writer)
+	}
+}
+
+// Draw a line strip from the given points
+func (b *Bvg) DrawLineStrip(l LineStrip) {
+	binary.Write(b.Writer, binary.LittleEndian, int8(60))
+	binary.Write(b.Writer, binary.LittleEndian, int32(len(l.Pts)))
+	for _, p := range l.Pts {
+		p.Write(b.Writer)
+		
 	}
 }
