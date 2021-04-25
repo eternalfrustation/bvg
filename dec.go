@@ -1,4 +1,4 @@
-package main
+package bvg
 
 import (
 	"encoding/binary"
@@ -16,11 +16,12 @@ func Decode(b []byte) (bvg *Bvg , err error) {
 	bvg = New(buffer)
 	bvg.Reader = bytes.NewBuffer(b)
 	for i := 0; i < len(b)-19; {
+//		fmt.Println(string(b[i]) + " at " + fmt.Sprintf("%dth byte", i))
 		switch b[i] {
 		case byte('l'):
 			Pts, n := PointsFromBytes(b[i+1:i+41], 2)
 			bvg.Lines = append(bvg.Lines, NewLine(Pts[0], Pts[1]))
-			i += n
+			i += n + 1
 		case byte('t'):
 			Pts, n := PointsFromBytes(b[i+1:i+61], 3)
 			bvg.Triangles = append(bvg.Triangles, NewTriangle(
@@ -28,27 +29,27 @@ func Decode(b []byte) (bvg *Bvg , err error) {
 				Pts[1],
 				Pts[2],
 			))
-			i += n
+			i += n + 1
 		case byte('c'):
 			Pts, n := PointsFromBytes(b[i+1:i+42], 2)
 			bvg.Circles = append(bvg.Circles, NewCircleGrad(Pts[0], Pts[1]))
-			i += n
+			i += n + 1
 		case byte('p'):
-			n, _ := binary.Varint(b[i+1 : i+5])
-			fmt.Println(n)
-			Pts, _ := PointsFromBytes(b[i+5:i+5+20*int(n)], int(n))
+			n := binary.LittleEndian.Uint32(b[i+1 : i+5])
+		//	fmt.Println(n)
+			Pts, x := PointsFromBytes(b[i+5:i+5+20*int(n+1)], int(n))
 			bvg.Polys = append(bvg.Polys, NewPoly(Pts...))
-			i += int(n)
+			i += x + 5
 		case byte('b'):
-			n, _ := binary.Varint(b[i+1 : i+5])
-			Pts, _ := PointsFromBytes(b[i+5:i+5+20*int(n)], int(n))
+			n := binary.LittleEndian.Uint32(b[i+1 : i+5])
+			Pts, x := PointsFromBytes(b[i+5:i+5+20*int(n)], int(n))
 			bvg.Bezs = append(bvg.Bezs, NewBez(Pts...))
-			i += int(n)
+			i += x + 5 
 		case byte(60):
-			n, _ := binary.Varint(b[i+1 : i+5])
-			Pts, _ := PointsFromBytes(b[i+5:i+5+20*int(n)], int(n))
+			n := binary.LittleEndian.Uint32(b[i+1 : i+5])
+			Pts, x := PointsFromBytes(b[i+5:i+5+20*int(n)], int(n))
 			bvg.LineStrips = append(bvg.LineStrips, NewLineStrip(Pts...))
-			i += int(n)
+			i += x + 5
 		default:
 			panic(fmt.Sprintf("Cannot identify the type of shape at %dth byte", i))
 		}
@@ -74,8 +75,8 @@ func PointsFromBytes(arr []byte, l int) ([]*Point, int) {
 		y := Float64FromBytes(arr[20*i+8 : 20*i+16])
 		r, g, b, a := uint8(arr[20*i+16]), uint8(arr[20*i+17]), uint8(arr[20*i+18]), uint8(arr[20*i+19])
 		PArr[i] = NewPtCol(x, y, r, g, b, a)
-		fmt.Println(*PArr[i])
+	//	fmt.Println(*PArr[i])
 	}
-	fmt.Println(len(arr))
-	return PArr, l * 20 + (l-1)
+	//fmt.Println(len(arr))
+	return PArr, l * 20
 }

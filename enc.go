@@ -1,17 +1,13 @@
-package main
+package bvg
 
 import (
 	"encoding/binary"
+//	"fmt"
 	//	"fmt"
 	"io"
 	"math"
 	//	"os"
 )
-
-
-func main() {
-	test()
-}
 
 // This stores the writer and commands to be written
 type Bvg struct {
@@ -200,7 +196,8 @@ func (b *Bvg) DrawCircle(c Circle) {
 // using a triangle strip from the given points
 func (b *Bvg) DrawPoly(p Poly) {
 	binary.Write(b.Writer, binary.LittleEndian, int8('p'))
-	binary.Write(b.Writer, binary.LittleEndian, int32(len(p.Pts)))
+	binary.Write(b.Writer, binary.LittleEndian, uint32(len(p.Pts)))
+//	fmt.Println(len(p.Pts))
 	for _, p := range p.Pts {
 		p.Write(b.Writer)
 	}
@@ -211,7 +208,7 @@ func (b *Bvg) DrawPoly(p Poly) {
 // control points
 func (b *Bvg) DrawBez(bez Bez) {
 	binary.Write(b.Writer, binary.LittleEndian, int8('b'))
-	binary.Write(b.Writer, binary.LittleEndian, int32(len(bez.Pts)))
+	binary.Write(b.Writer, binary.LittleEndian, uint32(len(bez.Pts)))
 	for _, p := range bez.Pts {
 		p.Write(b.Writer)
 	}
@@ -220,7 +217,7 @@ func (b *Bvg) DrawBez(bez Bez) {
 // Draw a line strip from the given points
 func (b *Bvg) DrawLineStrip(l LineStrip) {
 	binary.Write(b.Writer, binary.LittleEndian, int8(60))
-	binary.Write(b.Writer, binary.LittleEndian, int32(len(l.Pts)))
+	binary.Write(b.Writer, binary.LittleEndian, uint32(len(l.Pts)))
 	for _, p := range l.Pts {
 		p.Write(b.Writer)
 		
