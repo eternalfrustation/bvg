@@ -36,6 +36,12 @@ func NewPt(x, y float64) *Point {
 		Y: y,
 	}
 }
+
+
+func (p *Point) Dist(p1 *Point) float64 {
+	return math.Sqrt((p.X-p1.X)*(p.X-p1.X) + (p.Y-p1.Y)*(p.Y-p1.Y))
+}
+
 func (p *Point) Write(w io.Writer) {
 	binary.Write(w, binary.LittleEndian, p.X)
 	binary.Write(w, binary.LittleEndian, p.Y)
