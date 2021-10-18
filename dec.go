@@ -31,9 +31,11 @@ func Decode(b []byte) (bvg *Bvg , err error) {
 			))
 			i += n + 1
 		case byte('c'):
-			Pts, n := PointsFromBytes(b[i+1:i+42], 2)
-			bvg.Circles = append(bvg.Circles, NewCircleGrad(Pts[0], Pts[1]))
-			i += n + 1
+			Pts, n := PointsFromBytes(b[i+1:i+21], 1)
+			t1 := Float64FromBytes(b[i+21:i+29])
+			t2 := Float64FromBytes(b[i+29:i+37])
+			bvg.Circles = append(bvg.Circles, NewCircle(Pts[0], t1, t2))
+			i += n + 1 + 16
 		case byte('p'):
 			n := binary.LittleEndian.Uint32(b[i+1 : i+5])
 		//	fmt.Println(n)

@@ -2,6 +2,7 @@ package bvg
 
 import (
 	"bytes"
+	"math"
 	"io"
 	"fmt"
 	"os"
@@ -25,7 +26,7 @@ func TestBvg(t *testing.T) {
 	}
 	t.Log("Added Triangles" + fmt.Sprintf(" bytes Encoded: %d", bytesEncoded))
 	for i := -1.0; i < 0.998; i += 0.1 {
-		in.Circles = append(in.Circles, NewCircleGrad(center, NewPtCol(i, 0.6, 232, 54, 87, 255)))
+		in.Circles = append(in.Circles, NewCircle(center.RelPt(i, math.Pi*i), 0.5, 0.999))
 		bytesEncoded += 41
 	}
 	t.Log("Added Circles" + fmt.Sprintf(" bytes Encoded: %d", bytesEncoded))

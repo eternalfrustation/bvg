@@ -2,7 +2,7 @@ package bvg
 
 import (
 	"encoding/binary"
-//	"fmt"
+	//	"fmt"
 	//	"fmt"
 	"io"
 	"math"
@@ -36,7 +36,6 @@ func NewPt(x, y float64) *Point {
 		Y: y,
 	}
 }
-
 
 func (p *Point) Dist(p1 *Point) float64 {
 	return math.Sqrt((p.X-p1.X)*(p.X-p1.X) + (p.Y-p1.Y)*(p.Y-p1.Y))
@@ -87,21 +86,19 @@ func NewLine(p1, p2 *Point) *Line {
 }
 
 type Circle struct {
-	P1 *Point
-	P2 *Point
+	P *Point
+	// r is the complete radius of the circle 
+	// the alpha at r is 0
+	// t is threshold upto which the color of the circle 
+	// does not fade
+	r, t float64
 }
 
-func NewCircle(p1 *Point, r float64) *Circle {
+func NewCircle(p *Point, r, t float64) *Circle {
 	return &Circle{
-		P1: p1,
-		P2: p1.RelPt(r, 0),
-	}
-}
-
-func NewCircleGrad(p1, p2 *Point) *Circle {
-	return &Circle{
-		P1: p1,
-		P2: p2,
+		P:  p,
+		r: r,
+		t: t,
 	}
 }
 
@@ -182,7 +179,7 @@ func (b *Bvg) DrawLine(l Line) {
 
 // draw a triangle from p1, p2, p3
 func (b *Bvg) DrawTriangle(t Triangle) {
-	binary.Write(b.Writer, binary.LittleEndian, int8('t'))	
+	binary.Write(b.Writer, binary.LittleEndian, int8('t'))
 	t.P1.Write(b.Writer)
 	t.P2.Write(b.Writer)
 	t.P3.Write(b.Writer)
@@ -193,17 +190,17 @@ func (b *Bvg) DrawTriangle(t Triangle) {
 // the center to colours of p2 at the circumference
 func (b *Bvg) DrawCircle(c Circle) {
 	binary.Write(b.Writer, binary.LittleEndian, int8('c'))
-	c.P1.Write(b.Writer)
-	c.P2.Write(b.Writer)
+	c.P.Write(b.Writer)
+	binary.Write(b.Writer, binary.LittleEndian, c.r)
+	binary.Write(b.Writer, binary.LittleEndian, c.t)
 }
-
 
 // draws a polygon from the points given, it triangulates by
 // using a triangle strip from the given points
 func (b *Bvg) DrawPoly(p Poly) {
 	binary.Write(b.Writer, binary.LittleEndian, int8('p'))
 	binary.Write(b.Writer, binary.LittleEndian, uint32(len(p.Pts)))
-//	fmt.Println(len(p.Pts))
+	//	fmt.Println(len(p.Pts))
 	for _, p := range p.Pts {
 		p.Write(b.Writer)
 	}
@@ -226,6 +223,6 @@ func (b *Bvg) DrawLineStrip(l LineStrip) {
 	binary.Write(b.Writer, binary.LittleEndian, uint32(len(l.Pts)))
 	for _, p := range l.Pts {
 		p.Write(b.Writer)
-		
+
 	}
 }
