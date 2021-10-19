@@ -91,14 +91,14 @@ type Circle struct {
 	// the alpha at r is 0
 	// t is threshold upto which the color of the circle 
 	// does not fade
-	r, t float64
+	R, T float64
 }
 
 func NewCircle(p *Point, r, t float64) *Circle {
 	return &Circle{
 		P:  p,
-		r: r,
-		t: t,
+		R: r,
+		T: t,
 	}
 }
 
@@ -191,8 +191,8 @@ func (b *Bvg) DrawTriangle(t Triangle) {
 func (b *Bvg) DrawCircle(c Circle) {
 	binary.Write(b.Writer, binary.LittleEndian, int8('c'))
 	c.P.Write(b.Writer)
-	binary.Write(b.Writer, binary.LittleEndian, c.r)
-	binary.Write(b.Writer, binary.LittleEndian, c.t)
+	binary.Write(b.Writer, binary.LittleEndian, c.R)
+	binary.Write(b.Writer, binary.LittleEndian, c.T)
 }
 
 // draws a polygon from the points given, it triangulates by
